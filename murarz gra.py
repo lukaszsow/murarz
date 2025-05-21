@@ -247,6 +247,302 @@ def glowna_petla():
             stan.czas_akcji = time.time()
             minigra_stawianie_cegiel()
         
+
+def kup_skrzynke():
+    wybrano_skrzynke = False
+    
+    while not wybrano_skrzynke:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+        
+        ekran.fill(SZARY)
+        rysuj_tekst("Wybierz skrzynkę", czcionka_duza, CZARNY, SZEROKOSC // 2, 100, True)
+        rysuj_tekst(f"Masz: {stan.pieniadze} zł", czcionka_srednia, CZARNY, SZEROKOSC // 2, 150, True)
+        
+        przycisk_skrzynka1 = rysuj_przycisk("Skrzynka 50 zł", SZEROKOSC // 2 - 130, 200, 260, 50, (200, 150, 100), (230, 180, 130))
+        przycisk_skrzynka2 = rysuj_przycisk("Skrzynka 100 zł", SZEROKOSC // 2 - 130, 300, 260, 50, (150, 150, 200), (180, 180, 230))
+        przycisk_skrzynka3 = rysuj_przycisk("Skrzynka 150 zł", SZEROKOSC // 2 - 130, 400, 260, 50, (150, 200, 150), (180, 230, 180))
+        przycisk_powrot = rysuj_przycisk("Powrót", SZEROKOSC // 2 - 100, 460, 200, 40, CZERWONY, (255, 100, 100))
+        
+        if przycisk_skrzynka1 and stan.pieniadze >= 50:
+            wybrano_skrzynke = True
+            stan.pieniadze -= 50
+            otworz_skrzynke(1)
+        elif przycisk_skrzynka2 and stan.pieniadze >= 100:
+            wybrano_skrzynke = True
+            stan.pieniadze -= 100
+            otworz_skrzynke(2)
+        elif przycisk_skrzynka3 and stan.pieniadze >= 150:
+            wybrano_skrzynke = True
+            stan.pieniadze -= 150
+            otworz_skrzynke(3)
+        elif przycisk_powrot:
+            return
+            
+        pygame.display.flip()
+
+def otworz_skrzynke(poziom_skrzynki):
+    zaprawy = {
+        1: [
+            {"nazwa": "Podstawowa", "bonus": 1, "szansa": 60},
+            {"nazwa": "Wzmocniona", "bonus": 1.2, "szansa": 30},
+            {"nazwa": "Premium", "bonus": 1.5, "szansa": 10}
+        ],
+        2: [
+            {"nazwa": "Podstawowa", "bonus": 1, "szansa": 40},
+            {"nazwa": "Wzmocniona", "bonus": 1.2, "szansa": 40},
+            {"nazwa": "Premium", "bonus": 1.5, "szansa": 15},
+            {"nazwa": "Super Premium", "bonus": 2, "szansa": 5}
+        ],
+        3: [
+            {"nazwa": "Wzmocniona", "bonus": 1.2, "szansa": 45},
+            {"nazwa": "Premium", "bonus": 1.5, "szansa": 30},
+            {"nazwa": "Super Premium", "bonus": 2, "szansa": 20},
+            {"nazwa": "Ultra Premium", "bonus": 3, "szansa": 5}
+        ]
+    }
+    
+    lista_zapraw = zaprawy[poziom_skrzynki]
+    losowa_liczba = random.randint(1, 100)
+    suma_szans = 0
+    wylosowana_zaprawa = {"nazwa": "Podstawowa", "bonus": 1, "szansa": 100}
+    
+    for zaprawa in lista_zapraw:
+        suma_szans += zaprawa["szansa"]
+        if losowa_liczba <= suma_szans:
+            wylosowana_zaprawa = zaprawa
+            break
+    
+    for i in range(10):
+        ekran.fill(SZARY)
+        rysuj_tekst("Otwieranie skrzynki...", czcionka_duza, CZARNY, SZEROKOSC // 2, 200, True)
+        szerokosc_skrzynki = 200
+        wysokosc_skrzynki = 150
+        lewy = SZEROKOSC // 2 - szerokosc_skrzynki // 2
+        gorny = 250
+        kolor_skrzynki = (200 + random.randint(-20, 20), 150 + random.randint(-20, 20), 100 + random.randint(-20, 20))
+        pygame.draw.rect(ekran, kolor_skrzynki, (lewy, gorny, szerokosc_skrzynki, wysokosc_skrzynki))
+        pygame.draw.rect(ekran, CZARNY, (lewy, gorny, szerokosc_skrzynki, wysokosc_skrzynki), 3)
+        pygame.display.flip()
+        pygame.time.delay(200)
+    
+    ekran.fill(SZARY)
+    rysuj_tekst("Wylosowałeś zaprawę:", czcionka_duza, CZARNY, SZEROKOSC // 2, 150, True)
+    rysuj_tekst(f"{wylosowana_zaprawa['nazwa']}", czcionka_duza, ZIELONY, SZEROKOSC // 2, 220, True)
+    rysuj_tekst(f"Bonus: x{wylosowana_zaprawa['bonus']}", czcionka_srednia, CZARNY, SZEROKOSC // 2, 280, True)
+    
+    if wylosowana_zaprawa['bonus'] > stan.bonus_zaprawa:
+        stan.aktualna_zaprawa = wylosowana_zaprawa['nazwa']
+        stan.bonus_zaprawa = wylosowana_zaprawa['bonus']
+        rysuj_tekst("To lepsza zaprawa niż miałeś!", czcionka_srednia, ZIELONY, SZEROKOSC // 2, 330, True)
+    else:
+        rysuj_tekst("Masz już lepszą zaprawę", czcionka_srednia, CZERWONY, SZEROKOSC // 2, 330, True)
+    
+    rysuj_tekst("Kliknij, aby kontynuować", czcionka_srednia, CZARNY, SZEROKOSC // 2, 400, True)
+    pygame.display.flip()
+    
+    czekaj_na_klikniecie = True
+    while czekaj_na_klikniecie:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                czekaj_na_klikniecie = False
+
+def generuj_zlecenia():
+    poziomy_trudnosci = [
+        {"nazwa": "Łatwe", "mnoznik": 0.5},
+        {"nazwa": "Średnie", "mnoznik": 1.0},
+        {"nazwa": "Trudne", "mnoznik": 2.0}
+    ]
+    
+    rodzaje_zlecen = [
+        "Naprawa muru",
+        "Budowa ogrodzenia",
+        "Budowa garażu",
+        "Remont łazienki",
+        "Budowa komina",
+        "Wyburzanie ściany",
+        "Układanie posadzki",
+        "Budowa altanki",
+        "Renowacja bruku"
+    ]
+    
+    zlecenia = []
+    
+    for _ in range(3):
+        poziom = random.choice(poziomy_trudnosci)
+        rodzaj = random.choice(rodzaje_zlecen)
+        
+        base_pieniadze = 100 * stan.poziom
+        base_exp = 20 * stan.poziom
+        
+        pieniadze = int(base_pieniadze * poziom["mnoznik"] * (0.9 + random.random() * 0.2))
+        exp = int(base_exp * poziom["mnoznik"] * (0.9 + random.random() * 0.2))
+        
+        zlecenia.append({
+            "nazwa": f"{poziom['nazwa']} zlecenie: {rodzaj}",
+            "pieniadze": pieniadze,
+            "exp": exp,
+            "poziom_trudnosci": poziom["nazwa"]
+        })
+    
+    return zlecenia
+
+def idz_na_zlecenie():
+    zlecenia = generuj_zlecenia()
+    wybrano_zlecenie = False
+    
+    while not wybrano_zlecenie:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+        
+        ekran.fill(SZARY)
+        rysuj_tekst("Wybierz zlecenie", czcionka_duza, CZARNY, SZEROKOSC // 2, 80, True)
+        
+        y_start = 150
+        przyciski = []
+        
+        for i, zlecenie in enumerate(zlecenia):
+            przycisk = rysuj_przycisk(
+                f"{zlecenie['nazwa']}", 
+                SZEROKOSC // 2 - 300, y_start + i * 80, 600, 60, 
+                (100, 150, 200), (130, 180, 230)
+            )
+            przyciski.append(przycisk)
+            
+            rysuj_tekst(f"Zapłata: {zlecenie['pieniadze']} zł    EXP: {zlecenie['exp']}", 
+                      czcionka_mala, CZARNY, SZEROKOSC // 2, y_start + i * 80 + 70, True)
+        
+        przycisk_powrot = rysuj_przycisk("Powrót", 15, 15, 165, 40, CZERWONY, (255, 100, 100))
+        
+        for i, klikniety in enumerate(przyciski):
+            if klikniety:
+                wybrano_zlecenie = True
+                wykonaj_zlecenie(zlecenia[i])
+        
+        if przycisk_powrot:
+            return
+            
+        pygame.display.flip()
+
+def wykonaj_zlecenie(zlecenie):
+    zlecenie_ukonczone, nagroda_pieniadze, nagroda_exp = minigra_stawianie_cegiel(
+        poziom_trudnosci=zlecenie.get("poziom_trudnosci"))
+    
+    if zlecenie_ukonczone:
+        ekran.fill(SZARY)
+        rysuj_tekst("Zlecenie wykonane!", czcionka_duza, ZIELONY, SZEROKOSC // 2, 150, True)
+        rysuj_tekst(f"Zarobiłeś: {nagroda_pieniadze} zł", czcionka_srednia, CZARNY, SZEROKOSC // 2, 220, True)
+        rysuj_tekst(f"Zdobywasz: {nagroda_exp} exp", czcionka_srednia, CZARNY, SZEROKOSC // 2, 270, True)
+        
+        stan.pieniadze += nagroda_pieniadze
+        stan.exp += nagroda_exp
+    else:
+        ekran.fill(SZARY)
+        rysuj_tekst("Zlecenie niewykonane!", czcionka_duza, CZERWONY, SZEROKOSC // 2, 150, True)
+        rysuj_tekst("Nie zdążyłeś postawić wszystkich cegieł w terminie!", czcionka_srednia, CZARNY, SZEROKOSC // 2, 220, True)
+        rysuj_tekst("Nie otrzymujesz zapłaty.", czcionka_srednia, CZERWONY, SZEROKOSC // 2, 270, True)
+    
+    rysuj_tekst("Kliknij, aby kontynuować", czcionka_srednia, CZARNY, SZEROKOSC // 2, 350, True)
+    
+    pygame.display.flip()
+    
+    czekaj_na_klikniecie = True
+    while czekaj_na_klikniecie:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                czekaj_na_klikniecie = False
+    
+    if zlecenie_ukonczone:
+        stary_poziom = stan.poziom
+        ile_poziomow = stan.exp // 80
+        stan.poziom = 1 + ile_poziomow
+        
+        if stan.poziom > stary_poziom:
+            ekran.fill(SZARY)
+            rysuj_tekst(f"Awans na poziom {stan.poziom}!", czcionka_duza, ZIELONY, SZEROKOSC // 2, 250, True)
+            rysuj_tekst("Kliknij, aby kontynuować", czcionka_srednia, CZARNY, SZEROKOSC // 2, 350, True)
+            pygame.display.flip()
+            
+            czekaj_na_klikniecie = True
+            while czekaj_na_klikniecie:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        czekaj_na_klikniecie = False
+
+def glowna_petla():
+    cutscenka()
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                
+        czas_teraz = time.time()
+        if czas_teraz - stan.czas_akcji < 0.1:
+            continue
+            
+        ekran.fill(SZARY)
+        
+        poziom_exp = stan.exp % 80
+        maks_exp = 80
+        
+        rysuj_tekst(f"Poziom: {stan.poziom}", czcionka_srednia, CZARNY, 10, 10)
+        rysuj_tekst(f"Doświadczenie: {poziom_exp}/{maks_exp}", czcionka_srednia, CZARNY, 10, 50)
+        rysuj_tekst(f"Pieniądze: {stan.pieniadze} zł", czcionka_srednia, CZARNY, 10, 90)
+        rysuj_tekst(f"Aktualna zaprawa: {stan.aktualna_zaprawa} (x{stan.bonus_zaprawa})", czcionka_srednia, CZARNY, 10, 130)
+        
+        szerokosc_przycisku = 240
+        wysokosc_przycisku = 60
+        odstep = 20
+        y_przycisku = WYSOKOSC - wysokosc_przycisku - 30
+        
+        przycisk_cegla = rysuj_przycisk("Postaw cegłę", 
+            odstep, 
+            y_przycisku, 
+            szerokosc_przycisku, 
+            wysokosc_przycisku, 
+            (100, 150, 100), 
+            (130, 180, 130))
+        
+        przycisk_skrzynka = rysuj_przycisk("Kup skrzynkę", 
+             SZEROKOSC // 2 - szerokosc_przycisku // 2, 
+            y_przycisku, 
+            szerokosc_przycisku, 
+            wysokosc_przycisku, 
+            (150, 100, 100), 
+            (180, 130, 130))
+        
+        przycisk_zlecenie = rysuj_przycisk("Idź na zlecenie", 
+            SZEROKOSC - szerokosc_przycisku - odstep, 
+            y_przycisku, 
+            szerokosc_przycisku, 
+            wysokosc_przycisku, 
+            (100, 100, 150), 
+            (130, 130, 180))
+        
+        if przycisk_cegla:
+            stan.czas_akcji = time.time()
+            minigra_stawianie_cegiel()
+        elif przycisk_skrzynka:
+            stan.czas_akcji = time.time()
+            kup_skrzynke()
+        elif przycisk_zlecenie:
+            stan.czas_akcji = time.time()
+            idz_na_zlecenie()
+        
         pygame.display.flip()
     
     pygame.quit()
