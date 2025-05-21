@@ -88,13 +88,30 @@ def cutscenka():
             rysuj_tekst(tekst_cutscenki[i], czcionka_srednia, BIALY, SZEROKOSC // 2, 150 + i * 50, True)
         pygame.display.flip()
 
-def minigra_stawianie_cegiel():
+def minigra_stawianie_cegiel(poziom_trudnosci=None, specjalne=False):
     plansza = []
     szerokosc_cegly = 60
     wysokosc_cegly = 30
-    ilosc_kolumn = 7
-    ilosc_wierszy = 5
+    
+    if specjalne:
+        ilosc_kolumn = 10
+        ilosc_wierszy = 10
+    else:
+        ilosc_kolumn = 7
+        ilosc_wierszy = 5
+    
     odstep = 2
+    
+    czas_trwania = 20
+    if poziom_trudnosci:
+        if poziom_trudnosci == "Łatwe":
+            czas_trwania = 30
+        elif poziom_trudnosci == "Średnie":
+            czas_trwania = 20
+        elif poziom_trudnosci == "Trudne":
+            czas_trwania = 10
+        elif poziom_trudnosci == "Ultra":
+            czas_trwania = 40
     
     for wiersz in range(ilosc_wierszy):
         nowy_wiersz = []
@@ -109,8 +126,9 @@ def minigra_stawianie_cegiel():
     postawione_cegly = 0
     
     czas_start = time.time()
-    czas_trwania = 20
     minigra_aktywna = True
+    bonus_czasowy = 0
+    czas_pozostaly = czas_trwania
     
     while minigra_aktywna:
         czas_teraz = time.time()
@@ -157,8 +175,13 @@ def minigra_stawianie_cegiel():
     
     zlecenie_ukonczone = postawione_cegly >= puste_miejsca
     procent_ukonczenia = postawione_cegly / puste_miejsca if puste_miejsca > 0 else 0
-    nagroda_pieniadze = int(50 * procent_ukonczenia * stan.bonus_zaprawa)
-    nagroda_exp = int(15 * procent_ukonczenia)
+    podstawowa_nagroda_pieniadze = int(50 * procent_ukonczenia * stan.bonus_zaprawa)
+    podstawowa_nagroda_exp = int(15 * procent_ukonczenia)
+    
+    if zlecenie_ukonczone and czas_pozostaly > 0:
+        bonus_czasowy = int(czas_pozostaly * 2)
+        podstawowa_nagroda_pieniadze += bonus_czasowy
+        podstawowa_nagroda_exp += bonus_czasowy // 3
     
     ekran.fill(SZARY)
     
@@ -166,8 +189,11 @@ def minigra_stawianie_cegiel():
         rysuj_tekst("Minigra zakończona!", czcionka_duza, CZARNY, SZEROKOSC // 2, 150, True)
         rysuj_tekst(f"Postawiłeś {postawione_cegly} z {puste_miejsca} cegieł ({int(procent_ukonczenia * 100)}%)", 
                   czcionka_srednia, CZARNY, SZEROKOSC // 2, 220, True)
-        rysuj_tekst(f"Zarabiasz: {nagroda_pieniadze} zł", czcionka_srednia, CZARNY, SZEROKOSC // 2, 270, True)
-        rysuj_tekst(f"Zdobywasz: {nagroda_exp} exp", czcionka_srednia, CZARNY, SZEROKOSC // 2, 320, True)
+        rysuj_tekst(f"Zarabiasz: {podstawowa_nagroda_pieniadze} zł", czcionka_srednia, CZARNY, SZEROKOSC // 2, 270, True)
+        rysuj_tekst(f"Zdobywasz: {podstawowa_nagroda_exp} exp", czcionka_srednia, CZARNY, SZEROKOSC // 2, 320, True)
+        
+        if czas_pozostaly > 0:
+            rysuj_tekst(f"Bonus za szybkość: {bonus_czasowy} zł", czcionka_srednia, ZIELONY, SZEROKOSC // 2, 370, True)
     else:
         rysuj_tekst("Czas minął! Zlecenie niezakończone.", czcionka_duza, CZERWONY, SZEROKOSC // 2, 150, True)
         rysuj_tekst(f"Postawiłeś tylko {postawione_cegly} z {puste_miejsca} cegieł ({int(procent_ukonczenia * 100)}%)", 
@@ -187,66 +213,29 @@ def minigra_stawianie_cegiel():
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 czekaj_na_klikniecie = False
                 
-    stan.pieniadze += nagroda_pieniadze
-    stan.exp += nagroda_exp
-    
-    stary_poziom = stan.poziom
-    stan.poziom = 1 + stan.exp // 80
-    
-    if stan.poziom > stary_poziom:
-        ekran.fill(SZARY)
-        rysuj_tekst(f"Awans na poziom {stan.poziom}!", czcionka_duza, ZIELONY, SZEROKOSC // 2, 250, True)
-        rysuj_tekst("Kliknij, aby kontynuować", czcionka_srednia, CZARNY, SZEROKOSC // 2, 350, True)
-        pygame.display.flip()
+    if not poziom_trudnosci:
+        stan.pieniadze += podstawowa_nagroda_pieniadze
+        stan.exp += podstawowa_nagroda_exp
         
-        czekaj_na_klikniecie = True
-        while czekaj_na_klikniecie:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    czekaj_na_klikniecie = False
-
-def glowna_petla():
-    cutscenka()
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                
-        czas_teraz = time.time()
-        if czas_teraz - stan.czas_akcji < 0.1:
-            continue
+        stary_poziom = stan.poziom
+        stan.poziom = 1 + stan.exp // 80
+        
+        if stan.poziom > stary_poziom:
+            ekran.fill(SZARY)
+            rysuj_tekst(f"Awans na poziom {stan.poziom}!", czcionka_duza, ZIELONY, SZEROKOSC // 2, 250, True)
+            rysuj_tekst("Kliknij, aby kontynuować", czcionka_srednia, CZARNY, SZEROKOSC // 2, 350, True)
+            pygame.display.flip()
             
-        ekran.fill(SZARY)
-        
-        poziom_exp = stan.exp % 80
-        maks_exp = 80
-        
-        rysuj_tekst(f"Poziom: {stan.poziom}", czcionka_srednia, CZARNY, 10, 10)
-        rysuj_tekst(f"Doświadczenie: {poziom_exp}/{maks_exp}", czcionka_srednia, CZARNY, 10, 50)
-        rysuj_tekst(f"Pieniądze: {stan.pieniadze} zł", czcionka_srednia, CZARNY, 10, 90)
-        rysuj_tekst(f"Aktualna zaprawa: {stan.aktualna_zaprawa} (x{stan.bonus_zaprawa})", czcionka_srednia, CZARNY, 10, 130)
-        
-        szerokosc_przycisku = 240
-        wysokosc_przycisku = 60
-        odstep = 20
-        y_przycisku = WYSOKOSC - wysokosc_przycisku - 30
-        
-        przycisk_cegla = rysuj_przycisk("Postaw cegłę", 
-            odstep, 
-            y_przycisku, 
-            szerokosc_przycisku, 
-            wysokosc_przycisku, 
-            (100, 150, 100), 
-            (130, 180, 130))
-        
-        if przycisk_cegla:
-            stan.czas_akcji = time.time()
-            minigra_stawianie_cegiel()
-        
+            czekaj_na_klikniecie = True
+            while czekaj_na_klikniecie:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        czekaj_na_klikniecie = False
+    
+    return zlecenie_ukonczone, podstawowa_nagroda_pieniadze, podstawowa_nagroda_exp
 
 def kup_skrzynke():
     wybrano_skrzynke = False
@@ -390,6 +379,15 @@ def generuj_zlecenia():
             "poziom_trudnosci": poziom["nazwa"]
         })
     
+    if stan.poziom >= 5:
+        zlecenia.append({
+            "nazwa": "SPECJALNE: Ultra Mur",
+            "pieniadze": 500 * stan.poziom,
+            "exp": 100 * stan.poziom,
+            "specjalne": True,
+            "poziom_trudnosci": "Ultra"
+        })
+    
     return zlecenia
 
 def idz_na_zlecenie():
@@ -424,7 +422,12 @@ def idz_na_zlecenie():
         for i, klikniety in enumerate(przyciski):
             if klikniety:
                 wybrano_zlecenie = True
-                wykonaj_zlecenie(zlecenia[i])
+                zlecenie = zlecenia[i]
+                
+                if "specjalne" in zlecenie and zlecenie["specjalne"]:
+                    minigra_ultra_mur(zlecenie)
+                else:
+                    wykonaj_zlecenie(zlecenie)
         
         if przycisk_powrot:
             return
@@ -482,13 +485,78 @@ def wykonaj_zlecenie(zlecenie):
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         czekaj_na_klikniecie = False
 
+def minigra_ultra_mur(zlecenie):
+    zlecenie_ukonczone, nagroda_pieniadze, nagroda_exp = minigra_stawianie_cegiel(
+        poziom_trudnosci="Ultra", specjalne=True)
+    
+    if zlecenie_ukonczone:
+        ekran.fill(SZARY)
+        rysuj_tekst("GRATULACJE!", czcionka_duza, ZIELONY, SZEROKOSC // 2, 150, True)
+        rysuj_tekst("Ukończyłeś Ultra Mur!", czcionka_duza, ZIELONY, SZEROKOSC // 2, 200, True)
+        rysuj_tekst(f"Zarobiłeś: {nagroda_pieniadze} zł", czcionka_srednia, CZARNY, SZEROKOSC // 2, 270, True)
+        rysuj_tekst(f"Zdobywasz: {nagroda_exp} exp", czcionka_srednia, CZARNY, SZEROKOSC // 2, 320, True)
+        
+        pygame.display.flip()
+        pygame.time.delay(2000)
+        
+        ekran.fill(CZARNY)
+        rysuj_tekst("KONIEC GRY!", czcionka_duza, BIALY, SZEROKOSC // 2, 180, True)
+        rysuj_tekst("Przeszedłeś symulator murarza", czcionka_srednia, BIALY, SZEROKOSC // 2, 250, True)
+        rysuj_tekst("Dziękujemy za grę", czcionka_srednia, BIALY, SZEROKOSC // 2, 300, True)
+        rysuj_tekst(f"Twój końcowy poziom: {stan.poziom}", czcionka_srednia, BIALY, SZEROKOSC // 2, 350, True)
+        rysuj_tekst(f"Twoje końcowe pieniądze: {stan.pieniadze} zł", czcionka_srednia, BIALY, SZEROKOSC // 2, 390, True)
+        rysuj_tekst("Kliknij, aby zakończyć", czcionka_srednia, BIALY, SZEROKOSC // 2, 450, True)
+        
+        pygame.display.flip()
+        
+        czekaj_na_klikniecie = True
+        while czekaj_na_klikniecie:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    pygame.quit()
+                    sys.exit()
+    else:
+        ekran.fill(SZARY)
+        rysuj_tekst("Ultra Mur - NIEPOWODZENIE", czcionka_duza, CZERWONY, SZEROKOSC // 2, 150, True)
+        rysuj_tekst("Nie zdążyłeś ukończyć zadania w wyznaczonym czasie!", czcionka_srednia, CZARNY, SZEROKOSC // 2, 220, True)
+        rysuj_tekst("Spróbuj ponownie, gdy będziesz gotowy.", czcionka_srednia, CZARNY, SZEROKOSC // 2, 270, True)
+        rysuj_tekst("Kliknij, aby kontynuować", czcionka_srednia, CZARNY, SZEROKOSC // 2, 350, True)
+        
+        pygame.display.flip()
+        
+        czekaj_na_klikniecie = True
+        while czekaj_na_klikniecie:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    czekaj_na_klikniecie = False
+
+def cheat():
+    stan.poziom = 10
+    stan.pieniadze = 10000
+    stan.exp = 800
+    stan.bonus_zaprawa = 3
+    stan.aktualna_zaprawa = "Ultra Premium"
+
+muzyka = pygame.mixer.Sound("piosenka z bajki sąsiedzi.wav")
+muzyka.set_volume(0.05)
+
 def glowna_petla():
     cutscenka()
+    muzyka.play(loops = -1)
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_c:
+                    cheat()
                 
         czas_teraz = time.time()
         if czas_teraz - stan.czas_akcji < 0.1:
@@ -525,13 +593,20 @@ def glowna_petla():
             (150, 100, 100), 
             (180, 130, 130))
         
-        przycisk_zlecenie = rysuj_przycisk("Idź na zlecenie", 
+        if stan.poziom >= 5:
+            nazwa_przycisku = "Ultra Zlecenie"
+        else:
+            nazwa_przycisku = "Idź na zlecenie"
+            
+        przycisk_zlecenie = rysuj_przycisk(nazwa_przycisku, 
             SZEROKOSC - szerokosc_przycisku - odstep, 
             y_przycisku, 
             szerokosc_przycisku, 
             wysokosc_przycisku, 
             (100, 100, 150), 
             (130, 130, 180))
+        
+        przycisk_cheat = rysuj_przycisk("CHEAT", 650, 20, 115, 35, (80, 80, 80), (120, 120, 120))
         
         if przycisk_cegla:
             stan.czas_akcji = time.time()
@@ -542,6 +617,9 @@ def glowna_petla():
         elif przycisk_zlecenie:
             stan.czas_akcji = time.time()
             idz_na_zlecenie()
+        elif przycisk_cheat:
+            stan.czas_akcji = time.time()
+            cheat()
         
         pygame.display.flip()
     
